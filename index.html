@@ -1,0 +1,1498 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>slack</title>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background-color: #0a0a0a;
+            color: #e0e0e0;
+            font-family: Arial;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            text-align: center;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* Moving stripe pattern background */
+        .bg-stripes {
+            position: fixed;
+            top: -100%;
+            left: -100%;
+            width: 300%;
+            height: 300%;
+            background: repeating-linear-gradient(
+                45deg,
+                transparent,
+                transparent 20px,
+                rgba(255, 255, 255, 0.04) 20px,
+                rgba(255, 255, 255, 0.04) 40px
+            );
+            animation: moveStripes 10s linear infinite;
+            z-index: -2;
+        }
+
+        @keyframes moveStripes {
+            0% {
+                transform: translate(0, 0);
+            }
+            100% {
+                transform: translate(100px, -100px);
+            }
+        }
+
+        /* Snow canvas */
+        #snowCanvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: -1;
+        }
+
+        .container {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            z-index: 10;
+            padding: 40px;
+            padding-bottom: 100px;
+            background: rgba(20, 20, 20, 0.6);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            max-height: calc(100vh - 120px);
+            overflow-y: auto;
+            width: 90%;
+            max-width: 1000px;
+        }
+
+        h1 {
+            font-size: 56px;
+            margin-bottom: 10px;
+            background: linear-gradient(135deg, #ffffff, #888888);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            letter-spacing: 3px;
+            font-weight: 400;
+            font-family: 'Fredoka One', cursive;
+            text-shadow: 0 2px 10px rgba(255, 255, 255, 0.1);
+        }
+
+        h3 {
+            font-size: 20px;
+            margin: 20px auto 30px;
+            color: #999;
+            font-weight: 300;
+            letter-spacing: 1px;
+        }
+
+        .button-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 20px;
+            max-width: 800px;
+            margin: 20px auto;
+        }
+
+        .regular-button {
+            position: relative;
+            min-width: 180px;
+            padding: 15px 25px;
+            background: linear-gradient(135deg, #2a2a2a, #1a1a1a);
+            color: #e0e0e0;
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            font-size: 15px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+            font-weight: 500;
+            letter-spacing: 0.5px;
+        }
+
+        .regular-button:hover {
+            background: linear-gradient(135deg, #3a3a3a, #2a2a2a);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 25px rgba(255, 255, 255, 0.1);
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .regular-button:active {
+            transform: translateY(0);
+        }
+
+        .popup {
+            display: none;
+            position: fixed;
+            top: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: linear-gradient(135deg, #2a2a2a, #1a1a1a);
+            color: #e0e0e0;
+            padding: 15px 30px;
+            border-radius: 10px;
+            font-size: 16px;
+            z-index: 1000;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            animation: slideDown 0.3s ease;
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateX(-50%) translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(-50%) translateY(0);
+            }
+        }
+
+        .credits {
+            position: fixed;
+            bottom: 25px;
+            left: 20px;
+            color: #666;
+            font-size: 14px;
+            font-weight: 300;
+            letter-spacing: 1px;
+            z-index: 1001;
+            opacity: 0.7;
+            transition: opacity 0.3s ease;
+        }
+
+        .credits:hover {
+            opacity: 1;
+        }
+
+        /* Tab Bar */
+        .tab-bar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 40px;
+            padding: 15px 0;
+            z-index: 1000;
+            background: transparent;
+        }
+
+        .tab-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            opacity: 0.5;
+            color: #e0e0e0;
+        }
+
+        .tab-item:hover {
+            opacity: 0.8;
+            transform: translateY(-3px);
+        }
+
+        .tab-item.active {
+            opacity: 1;
+            color: #ffffff;
+        }
+
+        .tab-item i {
+            width: 28px;
+            height: 28px;
+            margin-bottom: 5px;
+        }
+
+        .tab-label {
+            font-size: 11px;
+            font-weight: 500;
+            letter-spacing: 0.5px;
+        }
+
+        /* Password Modal */
+        .password-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(5px);
+            z-index: 2000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .password-modal.show {
+            display: flex;
+        }
+
+        .password-box {
+            background: rgba(30, 30, 30, 0.9);
+            padding: 40px;
+            border-radius: 15px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+            text-align: center;
+            max-width: 400px;
+            width: 90%;
+        }
+
+        .password-box h2 {
+            margin-bottom: 20px;
+            color: #e0e0e0;
+            font-size: 24px;
+        }
+
+        .password-input {
+            width: 100%;
+            padding: 12px 15px;
+            background: rgba(20, 20, 20, 0.8);
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            color: #e0e0e0;
+            font-size: 16px;
+            margin-bottom: 15px;
+            outline: none;
+            transition: border-color 0.3s ease;
+        }
+
+        .password-input:focus {
+            border-color: rgba(255, 255, 255, 0.3);
+        }
+
+        .password-submit {
+            padding: 12px 30px;
+            background: linear-gradient(135deg, #2a2a2a, #1a1a1a);
+            color: #e0e0e0;
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 15px;
+            transition: all 0.3s ease;
+        }
+
+        .password-submit:hover {
+            background: linear-gradient(135deg, #3a3a3a, #2a2a2a);
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .password-error {
+            color: #ff4444;
+            margin-top: 10px;
+            font-size: 14px;
+            display: none;
+        }
+
+        /* Admin Page */
+        .admin-container {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 900;
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+        }
+
+        .admin-container.show {
+            display: block;
+        }
+
+        .admin-content {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(20, 20, 20, 0.85);
+            padding: 40px;
+            border-radius: 20px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            max-width: 600px;
+            width: 90%;
+        }
+
+        .admin-content h2 {
+            margin-bottom: 20px;
+            color: #e0e0e0;
+            font-size: 28px;
+        }
+
+        .back-btn {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            padding: 10px 20px;
+            background: rgba(30, 30, 30, 0.8);
+            color: #e0e0e0;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s ease;
+            z-index: 901;
+        }
+
+        .back-btn:hover {
+            background: rgba(40, 40, 40, 0.9);
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+
+        /* Todo List in Admin */
+        .todo-list {
+            text-align: left;
+            margin-top: 20px;
+        }
+
+        .todo-item {
+            background: rgba(30, 30, 30, 0.6);
+            padding: 15px 20px;
+            margin-bottom: 10px;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .todo-checkbox {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+        }
+
+        .todo-text {
+            flex: 1;
+            font-size: 15px;
+        }
+
+        .todo-text.completed {
+            text-decoration: line-through;
+            opacity: 0.5;
+        }
+
+        /* Responsive design */
+        @media (max-width: 768px) {
+            .container {
+                padding: 30px 20px;
+                padding-bottom: 100px;
+                margin: 20px;
+            }
+
+            h1 {
+                font-size: 42px;
+            }
+
+            h3 {
+                font-size: 18px;
+            }
+
+            .button-grid {
+                grid-template-columns: 1fr;
+                gap: 15px;
+            }
+
+            .regular-button {
+                min-width: 150px;
+                padding: 12px 20px;
+                font-size: 14px;
+            }
+
+            .tab-bar {
+                gap: 25px;
+            }
+
+            .tab-item i {
+                width: 24px;
+                height: 24px;
+            }
+
+            .tab-label {
+                font-size: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Background elements -->
+    <div class="bg-stripes"></div>
+    <canvas id="snowCanvas"></canvas>
+
+    <!-- Main content -->
+    <div class="container" id="mainContainer">
+        <h1>slack lite</h1>
+        <h3 id="subtitle">go to the doc in the games page to get the latest version</h3>
+        
+        <!-- Proxies Grid -->
+        <div class="button-grid" id="proxiesGrid">
+            <button class="regular-button" onclick="openBlob('https://s3.amazonaws.com/zoxh/index.html')">tung tung</button>
+            <button class="regular-button" onclick="openBlob('https://storage.googleapis.com/gclassroom/index.html')">opium</button>
+            <button class="regular-button" onclick="openBlob('https://s3.dualstack.us-east-1.amazonaws.com/jlkl/index.html?r=g')">bull-33</button>
+            <button class="regular-button" onclick="openBlob('https://s3.amazonaws.com/oiop/index.html')">bull-33 2</button>
+            <button class="regular-button" onclick="openBlob('https://s3.amazonaws.com/2027games/index.html')">fern</button>
+            <button class="regular-button" onclick="openBlob('https://neo-os-desktop-20260908.web.app/')">neo os</button>
+            <button class="regular-button" onclick="openBlob('thermowavetherapy.com/')">quasar</button>
+            <button class="regular-button" onclick="openBlob('https://cdn.jsdelivr.net/gh/rykcbaoolNEW/dogeub/index.svg?id=gegZneXJ53RPUT8oGC84bYV69bZF4j4G')">dogeub</button>
+            <button class="regular-button" onclick="openBlob('https://buypremiumpls.b-cdn.net/')">monoxide</button>
+            <button class="regular-button" onclick="openBlob('https://icon.horse/icon/germancamel.nekoweb.org')">gn-math</button>
+            <button class="regular-button" onclick="openBlob('https://storage.googleapis.com/cleverteachings/index.html')">gn-math 2</button>
+            <button class="regular-button" onclick="openBlob('https://nextcache3580.b-cdn.net/')">serum os</button>
+        </div>
+
+        <!-- Games Grid -->
+        <div class="button-grid" id="gamesGrid" style="display: none;">
+            <button class="regular-button" onclick="openBlob('https://docs.google.com/document/d/1vzJqO9GvSnzM35RQYk_9_6We3rF64EkTbE3TcHhkKW4/edit?usp=sharing')">click here for games</button>
+        </div>
+
+        <!-- Apps Grid -->
+        <div class="button-grid" id="appsGrid" style="display: none;">
+            <button class="regular-button" onclick="openCodeEditor()">code editor</button>
+            <button class="regular-button" onclick="openBlob('https://monochrome.tf/')">music (not working)</button>
+        </div>
+        
+        <div id="popup" class="popup">Opening link...</div>
+    </div>
+
+    <!-- Admin Container -->
+    <div class="admin-container" id="adminContainer">
+        <button class="back-btn" onclick="closeAdmin()">Back</button>
+        <div class="admin-content">
+            <h2>lucas' todo list</h2>
+            <div class="todo-list">
+                <div class="todo-item">
+                    <input type="checkbox" class="todo-checkbox">
+                    <span class="todo-text">finish up the testnav exploit</span>
+                </div>
+                <div class="todo-item">
+                    <input type="checkbox" class="todo-checkbox">
+                    <span class="todo-text">get the source for a static proxy</span>
+                </div>
+                <div class="todo-item">
+                    <input type="checkbox" class="todo-checkbox">
+                    <span class="todo-text">maybe make jinx look a lil better</span>
+                </div>
+                <div class="todo-item">
+                    <input type="checkbox" class="todo-checkbox">
+                    <span class="todo-text">make homemade cs2 case opening</span>
+                </div>
+                <div class="todo-item">
+                    <input type="checkbox" class="todo-checkbox">
+                    <span class="todo-text">moreeee proxiessss</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Password Modal -->
+    <div class="password-modal" id="passwordModal">
+        <div class="password-box">
+            <h2>Enter Password</h2>
+            <input type="password" class="password-input" id="passwordInput" placeholder="may or may not be 4422">
+            <button class="password-submit" onclick="checkPassword()">Submit</button>
+            <div class="password-error" id="passwordError">Incorrect password</div>
+        </div>
+    </div>
+
+    <!-- Credits -->
+    <div class="credits">made by lucas (v1.0.3)</div>
+
+    <!-- Tab Bar -->
+    <div class="tab-bar">
+        <div class="tab-item active" onclick="switchTab('proxies')" data-tab="proxies">
+            <i data-lucide="globe"></i>
+            <span class="tab-label">Proxies</span>
+        </div>
+        <div class="tab-item" onclick="switchTab('games')" data-tab="games">
+            <i data-lucide="gamepad-2"></i>
+            <span class="tab-label">Games</span>
+        </div>
+        <div class="tab-item" onclick="switchTab('apps')" data-tab="apps">
+            <i data-lucide="app-window"></i>
+            <span class="tab-label">Apps</span>
+        </div>
+        <div class="tab-item" onclick="switchTab('admin')" data-tab="admin">
+            <i data-lucide="shield"></i>
+            <span class="tab-label">Admin</span>
+        </div>
+    </div>
+
+    <script>
+        // Initialize Lucide icons
+        lucide.createIcons();
+
+        // Animated Page Title
+        const fullTitle = "slack lite";
+        let titleIndex = 0;
+        let isGrowing = true;
+        
+        function animatePageTitle() {
+            if (isGrowing) {
+                titleIndex++;
+                if (titleIndex >= fullTitle.length) {
+                    titleIndex = fullTitle.length - 1;
+                    isGrowing = false;
+                }
+            } else {
+                titleIndex--;
+                if (titleIndex <= 0) {
+                    titleIndex = 0;
+                    isGrowing = true;
+                }
+            }
+            
+            document.title = fullTitle.substring(0, titleIndex + 1);
+            setTimeout(animatePageTitle, 300);
+        }
+        
+        // Start the animation
+        animatePageTitle();
+
+        // Cobalt Code Editor HTML
+        const cobaltHTML = `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>cobalt</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"><\/script>
+    
+    <style>
+        :root {
+            --bg-main: #050505;
+            --bg-sidebar: #080808;
+            --bg-header: #0a0a0a;
+            --border: #1a1a1a;
+            --text-main: #d4d4d4;
+            --text-muted: #666666;
+            --accent: #2a2a2a;
+            --highlight: #ffffff;
+            --syn-tag: #ffffff;
+            --syn-attr: #999999;
+            --syn-str: #777777;
+            --syn-com: #444444;
+            --syn-num: #888888;
+            --syn-func: #cccccc;
+            --font-mono: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+            --font-ui: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; outline: none; }
+        
+        body {
+            background-color: var(--bg-main);
+            color: var(--text-main);
+            font-family: var(--font-ui);
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            font-size: 13px;
+        }
+
+        header {
+            height: 40px;
+            background: var(--bg-header);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 15px;
+            flex-shrink: 0;
+            z-index: 20;
+        }
+
+        .brand {
+            font-weight: 600;
+            font-size: 0.85rem;
+            letter-spacing: 0.5px;
+            color: var(--highlight);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .brand span { 
+            color: var(--text-muted); 
+            font-weight: 400; 
+            font-size: 0.7rem; 
+            border-left: 1px solid var(--border);
+            padding-left: 10px;
+        }
+
+        .toolbar { display: flex; gap: 6px; }
+
+        button {
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--text-muted);
+            padding: 4px 10px;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 0.7rem;
+            transition: all 0.2s;
+            font-family: var(--font-ui);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        button:hover { 
+            background: var(--accent); 
+            color: var(--text-main); 
+            border-color: var(--text-muted);
+        }
+
+        button.danger:hover {
+            border-color: #555;
+            color: #aaa;
+        }
+
+        .workspace {
+            display: flex;
+            flex: 1;
+            position: relative;
+        }
+
+        .sidebar {
+            width: 240px;
+            background: var(--bg-sidebar);
+            border-right: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            flex-shrink: 0;
+            transition: width 0.3s ease;
+        }
+
+        .sidebar.collapsed { width: 0; border: none; overflow: hidden; }
+
+        .sidebar-header {
+            padding: 12px 15px;
+            font-size: 0.65rem;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            font-weight: 700;
+            letter-spacing: 1px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .file-tree {
+            flex: 1;
+            overflow-y: auto;
+            padding: 10px 0;
+            user-select: none;
+        }
+
+        .tree-item {
+            display: flex;
+            align-items: center;
+            padding: 4px 0;
+            cursor: pointer;
+            color: var(--text-muted);
+            white-space: nowrap;
+        }
+
+        .tree-item:hover { color: var(--text-main); }
+        .tree-item.active { color: var(--highlight); font-weight: 500; }
+
+        .tree-indent {
+            display: inline-block;
+            width: 18px;
+            flex-shrink: 0;
+        }
+
+        .tree-arrow {
+            width: 16px;
+            text-align: center;
+            font-size: 0.6rem;
+            margin-right: 4px;
+            opacity: 0.7;
+            transition: transform 0.2s;
+        }
+
+        .tree-arrow.expanded { transform: rotate(90deg); }
+        .tree-arrow.hidden { visibility: hidden; }
+
+        .tree-name { font-family: var(--font-mono); font-size: 0.8rem; }
+
+        .main-area {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            background: var(--bg-main);
+            min-width: 0;
+        }
+
+        .tabs {
+            height: 32px;
+            background: var(--bg-main);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            padding: 0 5px;
+            overflow-x: auto;
+            flex-shrink: 0;
+        }
+
+        .tab {
+            padding: 0 12px;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            border-right: 1px solid var(--border);
+            cursor: pointer;
+            background: transparent;
+            gap: 8px;
+            min-width: 100px;
+            justify-content: space-between;
+            flex-shrink: 0;
+        }
+
+        .tab.active {
+            background: var(--bg-sidebar);
+            color: var(--text-main);
+            border-top: 1px solid var(--text-muted);
+        }
+
+        .tab-close {
+            font-size: 0.9rem;
+            opacity: 0;
+            margin-left: 5px;
+        }
+        .tab:hover .tab-close { opacity: 1; }
+
+        .split-view {
+            flex: 1;
+            display: flex;
+            position: relative;
+            min-height: 0;
+        }
+
+        .editor-pane {
+            flex: 1;
+            position: relative;
+            overflow: hidden;
+            display: flex;
+        }
+
+        .code-layer {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            padding: 20px;
+            margin: 0;
+            border: none;
+            font-family: var(--font-mono);
+            font-size: 14px;
+            line-height: 1.6;
+            tab-size: 2;
+            white-space: pre;
+            overflow: auto;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        textarea#codeEditor {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            padding: 20px;
+            margin: 0;
+            border: none;
+            resize: none;
+            font-family: var(--font-mono);
+            font-size: 14px;
+            line-height: 1.6;
+            tab-size: 2;
+            white-space: pre;
+            overflow: auto;
+            color: transparent;
+            background: transparent;
+            caret-color: var(--highlight);
+            z-index: 2;
+        }
+
+        textarea#codeEditor::selection {
+            background: rgba(255, 255, 255, 0.1);
+            color: transparent;
+        }
+
+        .preview-pane {
+            flex: 1;
+            border-left: 1px solid var(--border);
+            background: #ffffff;
+            position: relative;
+            min-width: 0;
+        }
+
+        iframe#previewFrame {
+            width: 100%;
+            height: 100%;
+            border: none;
+            display: block;
+        }
+
+        body.fullscreen-mode header,
+        body.fullscreen-mode .sidebar,
+        body.fullscreen-mode .tabs {
+            display: none !important;
+        }
+        
+        body.fullscreen-mode .workspace {
+            height: 100vh;
+            border: none;
+        }
+
+        body.fullscreen-mode .editor-pane {
+            display: none;
+        }
+
+        body.fullscreen-mode .preview-pane {
+            border: none;
+            width: 100vw;
+            height: 100vh;
+            position: fixed;
+            top: 0;
+            left: 0;
+            z-index: 100;
+        }
+
+        #fileInput, #zipInput, #folderInput { display: none; }
+
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: var(--bg-main); }
+        ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--accent); }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="brand">cobalt<span>made by lucas</span></div>
+        <div class="toolbar">
+            <button onclick="toggleSidebar()">Explorer</button>
+            <button onclick="document.getElementById('folderInput').click()">Upload Folder</button>
+            <button onclick="createNewFile()">+ File</button>
+            <button onclick="saveProject()">Export ZIP</button>
+            <button class="danger" onclick="clearProject()">Clear</button>
+            <button onclick="toggleFullscreen()">Fullscreen</button>
+            <input type="file" id="zipInput" accept=".zip">
+            <input type="file" id="folderInput" webkitdirectory directory multiple>
+        </div>
+    </header>
+
+    <div class="workspace">
+        <div class="sidebar" id="sidebar">
+            <div class="sidebar-header"><span>Explorer</span></div>
+            <div class="file-tree" id="fileTree"></div>
+        </div>
+
+        <div class="main-area">
+            <div class="tabs" id="tabsContainer"></div>
+            
+            <div class="split-view">
+                <div class="editor-pane">
+                    <pre class="code-layer" id="highlightLayer"></pre>
+                    <textarea id="codeEditor" spellcheck="false" placeholder="Select a file..."></textarea>
+                </div>
+                
+                <div class="preview-pane" id="previewContainer">
+                    <iframe id="previewFrame"></iframe>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const state = {
+            files: {},
+            activeFile: null,
+            openFiles: [],
+            expandedFolders: new Set([''])
+        };
+
+        const els = {
+            editor: document.getElementById('codeEditor'),
+            highlight: document.getElementById('highlightLayer'),
+            preview: document.getElementById('previewFrame'),
+            tree: document.getElementById('fileTree'),
+            tabs: document.getElementById('tabsContainer'),
+            sidebar: document.getElementById('sidebar')
+        };
+
+        window.onload = () => {
+            loadFromStorage();
+            if (Object.keys(state.files).length === 0) {
+                createNewFile('index.html', '<!DOCTYPE html>\\n<html>\\n<body>\\n  <h1>Hello Cobalt</h1>\\n</body>\\n</html>');
+            } else {
+                const first = Object.keys(state.files)[0];
+                openFile(first);
+            }
+            renderTree();
+            setInterval(() => saveToStorage(), 10000);
+            els.editor.addEventListener('input', handleInput);
+            els.editor.addEventListener('scroll', syncScroll);
+            els.editor.addEventListener('keydown', handleTabKey);
+        };
+
+        function createNewFile(name = null, content = '') {
+            if (!name) {
+                let i = 1;
+                while (state.files[\`untitled-\${i}.html\`]) i++;
+                name = \`untitled-\${i}.html\`;
+            }
+            state.files[name] = content;
+            openFile(name);
+            renderTree();
+            saveToStorage();
+        }
+
+        function openFile(path) {
+            if (state.activeFile) state.files[state.activeFile] = els.editor.value;
+            state.activeFile = path;
+            if (!state.openFiles.includes(path)) state.openFiles.push(path);
+            els.editor.value = state.files[path];
+            updateHighlight();
+            updatePreview();
+            renderTabs();
+            renderTree();
+        }
+
+        function closeFile(path, e) {
+            if(e) e.stopPropagation();
+            state.openFiles = state.openFiles.filter(f => f !== path);
+            if (state.activeFile === path) {
+                state.activeFile = state.openFiles.length ? state.openFiles[state.openFiles.length - 1] : null;
+                if (state.activeFile) openFile(state.activeFile);
+                else {
+                    els.editor.value = '';
+                    els.highlight.innerHTML = '';
+                    state.activeFile = null;
+                }
+            }
+            renderTabs();
+        }
+
+        function deleteFile(path, e) {
+            if(e) e.stopPropagation();
+            if(!confirm(\`Delete \${path}?\`)) return;
+            delete state.files[path];
+            closeFile(path);
+            renderTree();
+            saveToStorage();
+        }
+
+        function toggleFolder(path) {
+            if (state.expandedFolders.has(path)) state.expandedFolders.delete(path);
+            else state.expandedFolders.add(path);
+            renderTree();
+        }
+
+        function renderTree() {
+            els.tree.innerHTML = '';
+            const paths = Object.keys(state.files).sort();
+            const root = {};
+            paths.forEach(p => {
+                const parts = p.split('/');
+                let curr = root;
+                parts.forEach((part, idx) => {
+                    if (!curr[part]) curr[part] = (idx === parts.length - 1) ? '__FILE__' : {};
+                    curr = curr[part];
+                });
+            });
+            renderNode(root, '', 0);
+        }
+
+        function renderNode(node, currentPath, depth) {
+            const keys = Object.keys(node).sort((a, b) => {
+                const aIsFile = node[a] === '__FILE__';
+                const bIsFile = node[b] === '__FILE__';
+                if (aIsFile === bIsFile) return a.localeCompare(b);
+                return aIsFile ? 1 : -1;
+            });
+
+            keys.forEach(key => {
+                const fullPath = currentPath ? \`\${currentPath}/\${key}\` : key;
+                const isFile = node[key] === '__FILE__';
+                const isActive = state.activeFile === fullPath;
+                const isExpanded = state.expandedFolders.has(fullPath);
+
+                const div = document.createElement('div');
+                
+                if (isFile) {
+                    div.className = \`tree-item \${isActive ? 'active' : ''}\`;
+                    div.style.paddingLeft = \`\${depth * 18 + 18}px\`;
+                    div.innerHTML = \`<span class="tree-name">\${key}</span>\`;
+                    div.onclick = () => openFile(fullPath);
+                    div.oncontextmenu = (e) => {
+                        e.preventDefault();
+                        if(confirm(\`Delete \${key}?\`)) deleteFile(fullPath);
+                    };
+                } else {
+                    div.className = 'tree-item';
+                    div.style.paddingLeft = \`\${depth * 18}px\`;
+                    div.innerHTML = \`
+                        <span class="tree-arrow \${isExpanded ? 'expanded' : ''}">▶</span>
+                        <span class="tree-name">\${key}</span>
+                    \`;
+                    div.onclick = () => toggleFolder(fullPath);
+                }
+                
+                els.tree.appendChild(div);
+
+                if (!isFile && isExpanded) {
+                    renderNode(node[key], fullPath, depth + 1);
+                }
+            });
+        }
+
+        function renderTabs() {
+            els.tabs.innerHTML = '';
+            state.openFiles.forEach(path => {
+                const name = path.split('/').pop();
+                const tab = document.createElement('div');
+                tab.className = \`tab \${path === state.activeFile ? 'active' : ''}\`;
+                tab.innerHTML = \`<span>\${name}</span><span class="tab-close" onclick="closeFile('\${path}', event)">×</span>\`;
+                tab.onclick = () => openFile(path);
+                els.tabs.appendChild(tab);
+            });
+        }
+
+        function escapeHtml(text) {
+            return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+        }
+
+        function highlightCode(code, filename) {
+            const ext = filename.split('.').pop().toLowerCase();
+            let html = escapeHtml(code);
+
+            if (['js', 'ts', 'json'].includes(ext)) {
+                html = html.replace(/(\\/\\/.*$)/gm, '<span style="color:var(--syn-com)">$1</span>');
+                html = html.replace(/(['"\`])(.*?)\\1/g, '<span style="color:var(--syn-str)">$1$2$1</span>');
+                const keywords = /\\b(const|let|var|function|return|if|else|for|while|class|import|export|from|default|true|false|null|undefined)\\b/g;
+                html = html.replace(keywords, '<span style="color:var(--syn-tag)">$1</span>');
+                html = html.replace(/\\b([a-zA-Z_$][0-9a-zA-Z_$]*)(?=\\()/g, '<span style="color:var(--syn-func)">$1</span>');
+                html = html.replace(/\\b(\\d+)\\b/g, '<span style="color:var(--syn-num)">$1</span>');
+            } 
+            else if (ext === 'html') {
+                html = html.replace(/(&lt;\\/?)(\\w+)(.*?&gt;)/g, (match, p1, p2, p3) => {
+                    const attrs = p3.replace(/(\\s+)([\\w-]+)(=)(".*?")/g, '$1<span style="color:var(--syn-attr)">$2</span>$3<span style="color:var(--syn-str)">$4</span>');
+                    return \`<span style="color:var(--syn-com)">\${p1}</span><span style="color:var(--syn-tag)">\${p2}</span>\${attrs}\`;
+                });
+                html = html.replace(/(&lt;!--.*?--&gt;)/g, '<span style="color:var(--syn-com)">$1</span>');
+            }
+            else if (ext === 'css') {
+                html = html.replace(/^([^{}]+)({)/gm, '<span style="color:var(--syn-func)">$1</span>$2');
+                html = html.replace(/([\\w-]+)(:)/g, '<span style="color:var(--syn-attr)">$1</span>$2');
+                html = html.replace(/(:)([^;]+)(;)/g, '$1<span style="color:var(--syn-str)">$2</span>$3');
+            }
+            else if (ext === 'py') {
+                html = html.replace(/(#.*$)/gm, '<span style="color:var(--syn-com)">$1</span>');
+                html = html.replace(/(['"])(.*?)\\1/g, '<span style="color:var(--syn-str)">$1$2$1</span>');
+                html = html.replace(/\\b(def|class|return|if|else|elif|for|while|import|from|print|True|False|None)\\b/g, '<span style="color:var(--syn-tag)">$1</span>');
+                html = html.replace(/\\b(\\d+)\\b/g, '<span style="color:var(--syn-num)">$1</span>');
+            }
+
+            if (code.endsWith('\\n')) html += ' ';
+            return html;
+        }
+
+        function updateHighlight() {
+            if (!state.activeFile) return;
+            els.highlight.innerHTML = highlightCode(els.editor.value, state.activeFile);
+        }
+
+        function syncScroll() {
+            els.highlight.scrollTop = els.editor.scrollTop;
+            els.highlight.scrollLeft = els.editor.scrollLeft;
+        }
+
+        function handleInput() {
+            if (state.activeFile) {
+                state.files[state.activeFile] = els.editor.value;
+                updateHighlight();
+                updatePreview();
+            }
+        }
+
+        function handleTabKey(e) {
+            if (e.key === 'Tab') {
+                e.preventDefault();
+                const start = els.editor.selectionStart;
+                const end = els.editor.selectionEnd;
+                els.editor.value = els.editor.value.substring(0, start) + '  ' + els.editor.value.substring(end);
+                els.editor.selectionStart = els.editor.selectionEnd = start + 2;
+                handleInput();
+            }
+        }
+
+        function updatePreview() {
+            let content = '';
+            if (state.activeFile && state.activeFile.endsWith('.html')) {
+                content = els.editor.value;
+            } else if (state.files['index.html']) {
+                content = state.files['index.html'];
+            } else {
+                content = '<body style="display:flex;justify-content:center;align-items:center;height:100vh;font-family:sans-serif;color:#333"><h1>Select an HTML file to preview</h1></body>';
+            }
+            
+            const doc = els.preview.contentDocument || els.preview.contentWindow.document;
+            doc.open();
+            doc.write(content);
+            doc.close();
+        }
+
+        document.getElementById('folderInput').addEventListener('change', async (e) => {
+            const files = Array.from(e.target.files);
+            for (const file of files) {
+                const path = file.webkitRelativePath || file.name;
+                const content = await file.text();
+                state.files[path] = content;
+            }
+            renderTree();
+            saveToStorage();
+            e.target.value = '';
+        });
+
+        document.getElementById('zipInput').addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            try {
+                const zip = await JSZip.loadAsync(file);
+                let count = 0;
+                zip.forEach((path, entry) => {
+                    if (!entry.dir) {
+                        entry.async("string").then(c => {
+                            state.files[path] = c;
+                            count++;
+                            if(count === Object.keys(zip.files).filter(k=>!zip.files[k].dir).length) {
+                                renderTree(); saveToStorage();
+                            }
+                        });
+                    }
+                });
+            } catch(err) { console.error(err); }
+            e.target.value = '';
+        });
+
+        function toggleSidebar() {
+            els.sidebar.classList.toggle('collapsed');
+        }
+
+        function toggleFullscreen() {
+            document.body.classList.toggle('fullscreen-mode');
+        }
+
+        function clearProject() {
+            if(!confirm("Are you sure? This will delete ALL files.")) return;
+            state.files = {};
+            state.openFiles = [];
+            state.activeFile = null;
+            els.editor.value = '';
+            els.highlight.innerHTML = '';
+            renderTree();
+            renderTabs();
+            saveToStorage();
+        }
+
+        function saveProject() {
+            if (state.activeFile) state.files[state.activeFile] = els.editor.value;
+            const zip = new JSZip();
+            Object.keys(state.files).forEach(p => zip.file(p, state.files[p]));
+            zip.generateAsync({type:"blob"}).then(c => {
+                const a = document.createElement('a');
+                a.href = URL.createObjectURL(c);
+                a.download = "cobalt-project.zip";
+                a.click();
+            });
+        }
+
+        function saveToStorage() {
+            if (state.activeFile) state.files[state.activeFile] = els.editor.value;
+            localStorage.setItem('cobalt_files_v2', JSON.stringify(state.files));
+        }
+
+        function loadFromStorage() {
+            const s = localStorage.getItem('cobalt_files_v2');
+            if (s) state.files = JSON.parse(s);
+        }
+    <\/script>
+</body>
+</html>`;
+
+        // Snow particle system
+        const canvas = document.getElementById('snowCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        let width = window.innerWidth;
+        let height = window.innerHeight;
+        canvas.width = width;
+        canvas.height = height;
+
+        const snowflakes = [];
+        const snowflakeCount = 200;
+
+        class Snowflake {
+            constructor() {
+                this.reset();
+            }
+
+            reset() {
+                this.x = Math.random() * width;
+                this.y = Math.random() * -height;
+                this.size = Math.random() * 5 + 2;
+                this.speed = Math.random() * 3 + 2;
+                this.opacity = Math.random() * 0.6 + 0.3;
+                this.drift = Math.random() * 1 - 0.5;
+            }
+
+            update() {
+                this.y += this.speed;
+                this.x += this.drift;
+
+                if (this.y > height) {
+                    this.reset();
+                }
+
+                if (this.x > width) {
+                    this.x = 0;
+                } else if (this.x < 0) {
+                    this.x = width;
+                }
+            }
+
+            draw() {
+                ctx.fillStyle = `rgba(255, 255, 255, ${this.opacity})`;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+
+        // Initialize snowflakes
+        for (let i = 0; i < snowflakeCount; i++) {
+            snowflakes.push(new Snowflake());
+        }
+
+        function animateSnow() {
+            ctx.clearRect(0, 0, width, height);
+            
+            snowflakes.forEach(flake => {
+                flake.update();
+                flake.draw();
+            });
+
+            requestAnimationFrame(animateSnow);
+        }
+
+        animateSnow();
+
+        // Handle window resize
+        window.addEventListener('resize', () => {
+            width = window.innerWidth;
+            height = window.innerHeight;
+            canvas.width = width;
+            canvas.height = height;
+        });
+
+        // Tab switching
+        let currentTab = 'proxies';
+        let adminUnlocked = false;
+
+        function switchTab(tab) {
+            // Close admin panel if open
+            closeAdmin();
+
+            // Update active tab
+            document.querySelectorAll('.tab-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            document.querySelector(`[data-tab="${tab}"]`).classList.add('active');
+
+            const subtitle = document.getElementById('subtitle');
+            const mainContainer = document.getElementById('mainContainer');
+            
+            // Hide all grids first
+            document.getElementById('proxiesGrid').style.display = 'none';
+            document.getElementById('gamesGrid').style.display = 'none';
+            document.getElementById('appsGrid').style.display = 'none';
+
+            // Show main container
+            mainContainer.style.display = 'flex';
+
+            if (tab === 'proxies') {
+                currentTab = 'proxies';
+                document.getElementById('proxiesGrid').style.display = 'grid';
+                subtitle.textContent = 'choose your proxy';
+            } else if (tab === 'games') {
+                currentTab = 'games';
+                document.getElementById('gamesGrid').style.display = 'grid';
+                subtitle.textContent = '';
+            } else if (tab === 'apps') {
+                currentTab = 'apps';
+                document.getElementById('appsGrid').style.display = 'grid';
+                subtitle.textContent = 'choose your app';
+            } else if (tab === 'admin') {
+                if (!adminUnlocked) {
+                    showPasswordModal();
+                } else {
+                    currentTab = 'admin';
+                    showAdmin();
+                }
+            }
+        }
+
+        // Admin functions
+        function showAdmin() {
+            document.getElementById('mainContainer').style.display = 'none';
+            document.getElementById('adminContainer').classList.add('show');
+            // Set your custom background image URL here
+            document.getElementById('adminContainer').style.backgroundImage = "url('mightaddthislater')";
+        }
+
+        function closeAdmin() {
+            document.getElementById('adminContainer').classList.remove('show');
+        }
+
+        // Password modal
+        function showPasswordModal() {
+            document.getElementById('passwordModal').classList.add('show');
+            document.getElementById('passwordInput').value = '';
+            document.getElementById('passwordError').style.display = 'none';
+            document.getElementById('passwordInput').focus();
+        }
+
+        function checkPassword() {
+            const password = document.getElementById('passwordInput').value;
+            if (password === '4422') {
+                adminUnlocked = true;
+                document.getElementById('passwordModal').classList.remove('show');
+                showAdmin();
+            } else {
+                document.getElementById('passwordError').style.display = 'block';
+                document.getElementById('passwordInput').value = '';
+            }
+        }
+
+        // Close password modal on escape
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                document.getElementById('passwordModal').classList.remove('show');
+            }
+            if (e.key === 'Enter' && document.getElementById('passwordModal').classList.contains('show')) {
+                checkPassword();
+            }
+        });
+
+        // Todo checkbox functionality
+        document.querySelectorAll('.todo-checkbox').forEach(checkbox => {
+            checkbox.addEventListener('change', function() {
+                const textSpan = this.nextElementSibling;
+                if (this.checked) {
+                    textSpan.classList.add('completed');
+                } else {
+                    textSpan.classList.remove('completed');
+                }
+            });
+        });
+
+        // Open code editor in blob
+        function openCodeEditor() {
+            const blob = new Blob([cobaltHTML], { type: "text/html" });
+            const blobUrl = URL.createObjectURL(blob);
+
+            let newBlankTab = window.open(blobUrl, "_blank");
+
+            if (newBlankTab) {
+                showPopup("should've opened by now");
+            } else {
+                showPopup("allow popups and reload the page");
+            }
+        }
+
+        // Open link in blob window
+        function openBlob(url) {
+            const htmlContent = `
+            <!DOCTYPE html>
+            <html>
+                <head>
+                    <title>lucasvass.uk</title>
+                </head>
+                <body style="margin:0;height:100vh;padding:0;overflow:hidden;">
+                </body>
+            </html>
+            `;
+
+            const blob = new Blob([htmlContent], { type: "text/html" });
+            const blobUrl = URL.createObjectURL(blob);
+
+            let newBlankTab = window.open(blobUrl, "_blank");
+
+            if (newBlankTab) {
+                newBlankTab.onload = () => {
+                    newBlankTab.document.body.style.margin = "0";
+                    newBlankTab.document.body.style.height = "100vh";
+                    newBlankTab.document.body.style.padding = "0";
+                    newBlankTab.document.body.style.overflow = "hidden";
+
+                    let iframe = document.createElement("iframe");
+                    iframe.style.border = "none";
+                    iframe.style.width = "100%";
+                    iframe.style.height = "100%";
+                    iframe.style.margin = '0';
+                    iframe.referrerpolicy = "no-referrer";
+                    iframe.allow = "fullscreen";
+                    iframe.src = url;
+                    newBlankTab.document.body.appendChild(iframe);
+                    
+                    showPopup("should've opened by now");
+                };
+            } else {
+                showPopup("allow popups and reload the page");
+            }
+        }
+
+        // Popup function
+        function showPopup(message) {
+            const popup = document.getElementById("popup");
+            popup.textContent = message;
+            popup.style.display = "block";
+            setTimeout(() => {
+                popup.style.display = "none";
+            }, 3000);
+        }
+    </script>
+</body>
+</html>
